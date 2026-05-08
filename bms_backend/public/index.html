@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMS Gateway Dashboard Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #080a0f;
+            --card-bg: #0f141e;
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+            --accent-purple: #9333ea;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --accent-red: #ef4444;
+            --border-color: #1e293b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-color); 
+            color: var(--text-primary); 
+            min-height: 100vh; 
+            padding: 1.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header & Navigation */
+        header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem; }
+        .title-group h1 { 
+            font-family: 'Outfit', sans-serif; 
+            font-size: 1.8rem; 
+            background: linear-gradient(90deg, #d8b4fe, #818cf8);
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 2px;
+        }
+        .title-group p { font-size: 0.8rem; color: var(--text-secondary); }
+
+        .header-tools { display: flex; gap: 10px; }
+        .tool-btn { 
+            background: #1e293b; 
+            border: none; 
+            color: var(--text-secondary); 
+            width: 36px; height: 36px; 
+            border-radius: 8px; 
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tool-btn:hover { background: #334155; color: white; }
+        .tool-btn:active { transform: scale(0.95); }
+        .spin { animation: spin 0.6s linear; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .nav-tabs { display: flex; gap: 10px; margin-top: 15px; }
+        .tab { 
+            padding: 6px 16px; 
+            border-radius: 8px; 
+            font-size: 0.8rem; 
+            font-weight: 600; 
+            background: #1e293b; 
+            color: var(--text-secondary); 
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+        .tab.active { background: #3b398e; color: white; border-color: #6366f1; }
+
+        .bms-subtitle { 
+            text-align: center; 
+            color: #38bdf8; 
+            font-size: 0.9rem; 
+            font-weight: 600; 
+            margin: 20px 0;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+
+        /* Dashboard Grid */
+        .grid-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1rem; }
+        .grid-mixed { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+
+        .card { 
+            background: var(--card-bg); 
+            border: 1px solid var(--border-color); 
+            border-radius: 12px; 
+            padding: 1.2rem;
+            position: relative;
+        }
+        .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+        .card-header span { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; }
+        .card-header i { color: #38bdf8; font-size: 1rem; }
+
+        .card-value { font-size: 2rem; font-weight: 700; font-family: 'Outfit', sans-serif; display: flex; align-items: baseline; gap: 4px; }
+        .card-unit { font-size: 0.8rem; color: var(--text-secondary); font-weight: 400; }
+        .card-footer { margin-top: 10px; font-size: 0.7rem; color: var(--text-secondary); }
+
+        .card-connected { border-color: var(--accent-green); box-shadow: 0 0 15px rgba(16, 185, 129, 0.1); }
+
+        /* Status Badge */
+        .status-badge { 
+            padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 700;
+            display: flex; align-items: center; gap: 4px; border: 1px solid;
+        }
+        .badge-red { background: rgba(239, 68, 68, 0.1); color: var(--accent-red); border-color: rgba(239, 68, 68, 0.3); }
+
+        /* Switches */
+        .switch-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+        .switch-label { font-size: 0.75rem; color: var(--text-secondary); }
+        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { 
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; 
+            background-color: #1e293b; transition: .4s; border-radius: 20px; 
+        }
+        .slider:before { 
+            position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; 
+            background-color: white; transition: .4s; border-radius: 50%; 
+        }
+        input:checked + .slider { background-color: var(--accent-green); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        /* Battery Cells Style */
+        .battery-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; margin-top: 15px; }
+        .battery-container { 
+            width: 100%; height: 50px; background: rgba(30, 41, 59, 0.5); 
+            border: 1px solid var(--border-color); border-radius: 4px; 
+            position: relative; overflow: hidden; display: flex; flex-direction: column-reverse; 
+        }
+        .battery-level { width: 100%; background: var(--accent-green); transition: height 0.5s; }
+        .cell-item { text-align: center; }
+        .cell-num { font-size: 0.65rem; font-weight: 700; color: #94a3b8; margin-top: 4px; }
+        .cell-v { font-size: 0.7rem; font-weight: 600; color: var(--accent-green); }
+        .cell-max { border-color: var(--accent-orange) !important; box-shadow: 0 0 10px rgba(245, 158, 11, 0.3); }
+        .cell-min { border-color: var(--accent-red) !important; }
+
+        /* Chart Controls */
+        .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .chart-actions { display: flex; gap: 10px; align-items: center; }
+        .chart-btn { 
+            background: #1e293b; border: 1px solid var(--border-color); color: white; 
+            padding: 4px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer;
+        }
+        .chart-btn.active { background: #3b398e; border-color: #6366f1; }
+        
+        .date-input { 
+            background: #0f141e; border: 1px solid var(--border-color); color: var(--text-secondary); 
+            padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; 
+        }
+
+        .legend-toggle { display: flex; gap: 15px; }
+        .lt-item { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; cursor: pointer; }
+        .lt-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center;
+            z-index: 1000; backdrop-filter: blur(8px);
+        }
+        .modal-content { background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 1.5rem; width: 90%; max-width: 900px; padding: 2rem; }
+        
+        @keyframes battery-pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+        .charging .battery-level { animation: battery-pulse 1.5s infinite; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="title-group">
+            <h1>Batería LiFePO4</h1>
+            <p>Monitoreo Batería en tiempo real</p>
+            <div class="nav-tabs">
+                <div class="tab active">Batería</div>
+            </div>
+        </div>
+        <div class="header-tools">
+            <button class="tool-btn" onclick="manualRefresh(this)" title="Refresh">↻</button>
+            <button class="tool-btn" onclick="openStats()" title="Estadísticas">📊</button>
+            <button class="tool-btn" onclick="openSettings()" title="Configuración">⚙</button>
+        </div>
+    </header>
+
+    <!-- Modal Configuración -->
+    <div id="settingsModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 400px;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 2rem;">
+                <h2 style="font-family: 'Outfit'; font-size: 1.5rem; color: white;">Configuración</h2>
+                <button onclick="closeSettings()" style="background: var(--accent-red); padding: 5px 12px; border-radius: 6px; border: none; color: white; cursor: pointer;">Cerrar</button>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                    <label style="font-size: 0.8rem; color: var(--text-secondary);">Capacidad de Batería (Ah):</label>
+                    <input type="number" id="cfg-capacity-ah" class="date-input" style="padding: 10px; font-size: 1rem; width: 100%;" value="100">
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                    <label style="font-size: 0.8rem; color: var(--text-secondary);">Voltaje Nominal (V):</label>
+                    <input type="number" id="cfg-voltage-nom" class="date-input" style="padding: 10px; font-size: 1rem; width: 100%;" value="25.6">
+                </div>
+                <button onclick="saveSettings()" style="background: var(--accent-blue); padding: 12px; border-radius: 8px; border: none; color: white; font-weight: 700; cursor: pointer; margin-top: 10px;">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="bms-subtitle">
+        <span>⚙</span> Daly BMS/JBD (BLE Bridge)
+    </div>
+
+    <!-- Top Grid -->
+    <div class="grid-row">
+        <div class="card card-connected">
+            <div class="card-header"><span>📡 Estado BMS</span></div>
+            <div class="card-value" style="color: var(--accent-green);">CONECTADO</div>
+            <div class="card-footer" id="last-update">Visto: --:--</div>
+        </div>
+        <div class="card">
+            <div class="card-header"><span>🔋 SoC Real (BMS)</span></div>
+            <div class="card-value"><span id="val-soc">0.0</span><span class="card-unit">%</span></div>
+            <div class="card-footer">Capacidad BMS 100% Real</div>
+        </div>
+        <div class="card">
+            <div class="card-header"><span>⚡ Voltaje BMS</span></div>
+            <div class="card-value"><span id="val-voltage">0.00</span><span class="card-unit">V</span></div>
+            <div class="card-footer">Monitor de Potencia BMS</div>
+        </div>
+        <div class="card">
+            <div class="card-header"><span>📉 Amperaje BMS</span></div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="card-value" id="card-current">0.00<span class="card-unit">A</span></div>
+                <div id="status-badge" class="status-badge">REPOSO</div>
+            </div>
+            <div class="card-footer">Corriente de Carga/Descarga</div>
+        </div>
+    </div>
+
+    <!-- Mixed Grid -->
+    <div class="grid-mixed">
+        <div class="card">
+            <div class="card-header"><span>🥞 Estado de Celdas (Pack)</span></div>
+            <div id="cells-grid" class="battery-grid">
+                <!-- Cells generated here -->
+            </div>
+            <div style="display: flex; gap: 20px; margin-top: 15px; font-size: 0.75rem;">
+                <span>Máx: <b id="cell-max" style="color: var(--accent-orange);">0.000V</b></span>
+                <span>Mín: <b id="cell-min" style="color: var(--accent-red);">0.000V</b></span>
+                <span>Diff: <b id="cell-diff">0.000V</b></span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header"><span>🌡 Temp BMS</span></div>
+            <div class="card-value"><span id="val-temp">0.0</span><span class="card-unit">°C</span></div>
+            
+            <div class="switch-row" style="margin-top: 20px;">
+                <span class="switch-label">MOS Carga: <b id="status-charge" style="color: var(--accent-green);">---</b></span>
+                <label class="switch">
+                    <input type="checkbox" id="chk-charge" onchange="toggleMos('charge')">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="switch-row">
+                <span class="switch-label">MOS Descarga: <b id="status-discharge" style="color: var(--accent-green);">---</b></span>
+                <label class="switch">
+                    <input type="checkbox" id="chk-discharge" onchange="toggleMos('discharge')">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header"><span>🌀 Potencia BMS</span></div>
+            <div class="card-value"><span id="val-power">0.0</span><span class="card-unit">W</span></div>
+            <div class="card-footer">Cálculo: V x A</div>
+        </div>
+    </div>
+
+    <!-- Bottom Small Cards -->
+    <div style="display: grid; grid-template-columns: 1fr 3fr; gap: 1rem; margin-bottom: 1rem;">
+        <div class="card">
+            <div class="card-header"><span>🕒 Consumo Hoy (BMS)</span></div>
+            <div style="font-size: 0.8rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="color: var(--text-secondary);">Cargado:</span> <b id="val-wh-chg">0.0 Wh</b>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="color: var(--text-secondary);">Descargado:</span> <b id="val-wh-dsg">0.0 Wh</b>
+                </div>
+                <div style="display: flex; justify-content: space-between; border-top: 1px solid var(--border-color); padding-top: 8px;">
+                    <span style="color: var(--text-secondary);">Neto Hoy:</span> <b id="val-wh-net" style="color: var(--accent-green);">0.0 Wh</b>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="chart-header">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.2rem;">📈</span>
+                    <h2 style="font-size: 1.1rem; font-family: 'Outfit';">BMS: Análisis de Datos</h2>
+                </div>
+                <div class="legend-toggle">
+                    <div class="lt-item"><span class="lt-dot" style="background: var(--accent-red);"></span> Voltaje</div>
+                    <div class="lt-item"><span class="lt-dot" style="background: var(--accent-blue);"></span> Corriente</div>
+                    <div class="lt-item"><span class="lt-dot" style="background: var(--accent-green);"></span> Potencia</div>
+                </div>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                <div class="chart-actions">
+                    <button class="chart-btn">1h</button>
+                    <button class="chart-btn active">24h</button>
+                    <button class="chart-btn">7d</button>
+                    <button class="chart-btn">Ev. Log</button>
+                    <button class="chart-btn">Suavizar</button>
+                </div>
+                <div class="chart-actions">
+                    <input type="text" class="date-input" placeholder="dd/mm/aaaa">
+                    <input type="text" class="date-input" placeholder="dd/mm/aaaa">
+                    <button class="chart-btn" style="background: #4f46e5; color: white;">Filtrar</button>
+                    <button class="chart-btn">Reset</button>
+                    <button class="chart-btn">CSV 📥</button>
+                </div>
+            </div>
+            
+            <canvas id="historyChart" height="180"></canvas>
+        </div>
+    </div>
+
+    <!-- Modal Estadísticas -->
+    <div id="statsModal" class="modal-overlay">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 2rem;">
+                <div>
+                    <h2 style="font-family: 'Outfit'; font-size: 1.8rem; background: linear-gradient(90deg, #d8b4fe, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Análisis Estadístico</h2>
+                    <div class="nav-tabs" style="margin-top: 15px;">
+                        <button class="tab active" onclick="setRange('1h')">1h</button>
+                        <button class="tab" onclick="setRange('24h')">24h</button>
+                        <button class="tab" onclick="setRange('7d')">7d</button>
+                        <button class="tab" onclick="setRange('custom')">Personalizado</button>
+                    </div>
+                </div>
+                <button onclick="closeStats()" style="background: var(--accent-red); padding: 8px 18px; border-radius: 8px; font-weight: 700; color: white; border: none; cursor: pointer;">Cerrar</button>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <!-- Voltaje -->
+                <div class="card">
+                    <div class="card-header"><span>Voltaje</span></div>
+                    <div style="font-size: 0.85rem;">
+                        <div class="switch-row"><span>Mínimo:</span> <b id="st-v-min">--</b></div>
+                        <div class="switch-row"><span>Máximo:</span> <b id="st-v-max">--</b></div>
+                        <div class="switch-row"><span>Promedio:</span> <b id="st-v-avg">--</b></div>
+                        <div class="switch-row"><span>Rango:</span> <b id="st-v-range">--</b></div>
+                        <div class="switch-row"><span>Estabilidad:</span> <b id="st-v-stab">--</b></div>
+                    </div>
+                </div>
+                <!-- Corriente -->
+                <div class="card">
+                    <div class="card-header"><span>Corriente</span></div>
+                    <div style="font-size: 0.85rem;">
+                        <div class="switch-row"><span>Mínimo:</span> <b id="st-i-min">--</b></div>
+                        <div class="switch-row"><span>Máximo:</span> <b id="st-i-max">--</b></div>
+                        <div class="switch-row"><span>Promedio:</span> <b id="st-i-avg">--</b></div>
+                        <div class="switch-row"><span>Rango:</span> <b id="st-i-range">--</b></div>
+                        <div class="switch-row"><span>Estabilidad:</span> <b id="st-i-stab">--</b></div>
+                    </div>
+                </div>
+                <!-- Potencia -->
+                <div class="card">
+                    <div class="card-header"><span>Potencia</span></div>
+                    <div style="font-size: 0.85rem;">
+                        <div class="switch-row"><span>Mínimo:</span> <b id="st-p-min">--</b></div>
+                        <div class="switch-row"><span>Máximo:</span> <b id="st-p-max">--</b></div>
+                        <div class="switch-row"><span>Promedio:</span> <b id="st-p-avg">--</b></div>
+                        <div class="switch-row"><span>Desviación:</span> <b id="st-p-dev">--</b></div>
+                    </div>
+                </div>
+                <!-- Información -->
+                <div class="card">
+                    <div class="card-header"><span>Información</span></div>
+                    <div style="font-size: 0.85rem;">
+                        <div class="switch-row"><span>Ah Cargado:</span> <b id="st-ah-chg">--</b></div>
+                        <div class="switch-row"><span>Ah Descargado:</span> <b id="st-ah-dsg">--</b></div>
+                        <div class="switch-row"><span>Wh Neto:</span> <b id="st-wh-net" style="color: var(--accent-blue);">--</b></div>
+                        <div class="switch-row"><span>Muestras:</span> <b id="st-samples">--</b></div>
+                        <div class="switch-row" style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                            <span>Ciclos Estimados:</span> <b id="st-cycles" style="color: var(--accent-orange);">--</b>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let historyChart;
+        let lastData = { latest: null, history: [], energy: null };
+        const CONTROL_PIN = "123456"; 
+
+        let config = {
+            capacityAh: parseFloat(localStorage.getItem('bms_capacity')) || 100,
+            nominalV: parseFloat(localStorage.getItem('bms_voltage')) || 25.6
+        };
+
+        function openSettings() {
+            document.getElementById('cfg-capacity-ah').value = config.capacityAh;
+            document.getElementById('cfg-voltage-nom').value = config.nominalV;
+            document.getElementById('settingsModal').style.display = 'flex';
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        function saveSettings() {
+            config.capacityAh = parseFloat(document.getElementById('cfg-capacity-ah').value);
+            config.nominalV = parseFloat(document.getElementById('cfg-voltage-nom').value);
+            localStorage.setItem('bms_capacity', config.capacityAh);
+            localStorage.setItem('bms_voltage', config.nominalV);
+            alert('Configuración guardada');
+            closeSettings();
+            if (lastData.history.length > 0) calculateStats();
+        }
+
+        function manualRefresh(btn) {
+            btn.classList.add('spin');
+            updateDashboard();
+            setTimeout(() => btn.classList.remove('spin'), 600);
+        }
+
+        function openStats() {
+            const modal = document.getElementById('statsModal');
+            modal.style.display = 'flex';
+            if (lastData.history.length > 0) calculateStats();
+        }
+
+        function closeStats() {
+            document.getElementById('statsModal').style.display = 'none';
+        }
+
+        function calculateStats() {
+            const h = lastData.history;
+            const getStats = (arr) => {
+                if (arr.length === 0) return { min: 0, max: 0, avg: 0, range: 0, stab: 'N/A' };
+                const min = Math.min(...arr);
+                const max = Math.max(...arr);
+                const avg = arr.reduce((a,b) => a+b, 0) / arr.length;
+                const range = max - min;
+                const sqDiffs = arr.map(v => Math.pow(v - avg, 2));
+                const stdDev = Math.sqrt(sqDiffs.reduce((a,b) => a+b, 0) / arr.length);
+                const stab = stdDev < (avg * 0.05) ? 'ALTA' : (stdDev < (avg * 0.15) ? 'MEDIA' : 'BAJA');
+                return { min, max, avg, range, stab, stdDev };
+            };
+
+            const v = getStats(h.map(d => d.voltage));
+            const i = getStats(h.map(d => d.current));
+            const p = getStats(h.map(d => d.power));
+
+            document.getElementById('st-v-min').innerText = v.min.toFixed(2) + 'V';
+            document.getElementById('st-v-max').innerText = v.max.toFixed(2) + 'V';
+            document.getElementById('st-v-avg').innerText = v.avg.toFixed(2) + 'V';
+            document.getElementById('st-v-range').innerText = v.range.toFixed(2) + 'V';
+            document.getElementById('st-v-stab').innerText = v.stab;
+
+            document.getElementById('st-i-min').innerText = i.min.toFixed(2) + 'A';
+            document.getElementById('st-i-max').innerText = i.max.toFixed(2) + 'A';
+            document.getElementById('st-i-avg').innerText = i.avg.toFixed(2) + 'A';
+            document.getElementById('st-i-range').innerText = i.range.toFixed(2) + 'A';
+            document.getElementById('st-i-stab').innerText = i.stab;
+
+            document.getElementById('st-p-min').innerText = p.min.toFixed(1) + 'W';
+            document.getElementById('st-p-max').innerText = p.max.toFixed(1) + 'W';
+            document.getElementById('st-p-avg').innerText = p.avg.toFixed(1) + 'W';
+            document.getElementById('st-p-dev').innerText = p.stdDev.toFixed(1) + 'W';
+
+            document.getElementById('st-samples').innerText = h.length;
+            
+            if (lastData.energy) {
+                const e = lastData.energy;
+                const vNom = config.nominalV;
+                const capacityWh = config.capacityAh * vNom;
+                document.getElementById('st-ah-chg').innerText = (e.charged_wh / vNom).toFixed(2) + ' Ah';
+                document.getElementById('st-ah-dsg').innerText = (e.discharged_wh / vNom).toFixed(2) + ' Ah';
+                document.getElementById('st-wh-net').innerText = (e.charged_wh - e.discharged_wh).toFixed(1) + ' Wh';
+                document.getElementById('st-cycles').innerText = (e.discharged_wh / capacityWh).toFixed(4);
+            }
+        }
+
+        async function updateDashboard() {
+            try {
+                const [statsRes, energyRes] = await Promise.all([
+                    fetch('/api/stats'),
+                    fetch('/api/energy')
+                ]);
+                const data = await statsRes.json();
+                const energy = await energyRes.json();
+                lastData = { ...data, energy };
+
+                if (data.latest) {
+                    const l = data.latest;
+                    document.getElementById('last-update').innerText = 'Visto: ' + new Date(l.created_at).toLocaleTimeString();
+                    document.getElementById('val-soc').innerText = l.soc.toFixed(1);
+                    document.getElementById('val-voltage').innerText = l.voltage.toFixed(2);
+                    document.getElementById('val-power').innerText = l.power.toFixed(1);
+                    document.getElementById('val-temp').innerText = l.temp1.toFixed(1);
+
+                    const curr = l.current;
+                    const currEl = document.getElementById('card-current');
+                    currEl.innerHTML = `${curr.toFixed(2)}<span class="card-unit">A</span>`;
+                    
+                    const badge = document.getElementById('status-badge');
+                    if (curr > 0.1) {
+                        badge.innerText = 'CARGA ⬆';
+                        badge.className = 'status-badge status-on';
+                        badge.style.background = 'rgba(16, 185, 129, 0.1)';
+                        badge.style.color = 'var(--accent-green)';
+                    } else if (curr < -0.1) {
+                        badge.innerText = 'DESCARGA ⬇';
+                        badge.className = 'status-badge badge-red';
+                    } else {
+                        badge.innerText = 'REPOSO';
+                        badge.className = 'status-badge';
+                        badge.style.background = '#1e293b';
+                        badge.style.color = '#94a3b8';
+                    }
+
+                    // Switches status
+                    document.getElementById('chk-charge').checked = l.charge_mos;
+                    document.getElementById('chk-discharge').checked = l.discharge_mos;
+                    document.getElementById('status-charge').innerText = l.charge_mos ? 'CONDUCIENDO' : 'CORTADO';
+                    document.getElementById('status-discharge').innerText = l.discharge_mos ? 'CONDUCIENDO' : 'CORTADO';
+
+                    // Wh
+                    document.getElementById('val-wh-chg').innerText = `${energy.charged_wh.toFixed(1)} Wh`;
+                    document.getElementById('val-wh-dsg').innerText = `${energy.discharged_wh.toFixed(1)} Wh`;
+                    document.getElementById('val-wh-net').innerText = `${(energy.charged_wh - energy.discharged_wh).toFixed(1)} Wh`;
+
+                    // Cells
+                    const grid = document.getElementById('cells-grid');
+                    grid.innerHTML = '';
+                    if (l.cells) {
+                        const maxV = Math.max(...l.cells);
+                        const minV = Math.min(...l.cells);
+                        l.cells.forEach((v, i) => {
+                            const pct = Math.min(100, Math.max(0, (v - 2.8) / (4.2 - 2.8) * 100));
+                            const cellDiv = document.createElement('div');
+                            cellDiv.className = 'cell-item';
+                            let bClass = '';
+                            if (v === maxV) bClass = 'cell-max';
+                            else if (v === minV) bClass = 'cell-min';
+                            
+                            cellDiv.innerHTML = `
+                                <div class="battery-container ${bClass} ${curr > 0.1 ? 'charging' : ''}">
+                                    <div class="battery-level" style="height: ${pct}%; background: ${v < 3.0 ? 'var(--accent-red)' : 'var(--accent-green)'}"></div>
+                                </div>
+                                <div class="cell-num">${i+1}</div>
+                                <div class="cell-v">${v.toFixed(3)}</div>
+                            `;
+                            grid.appendChild(cellDiv);
+                        });
+                        document.getElementById('cell-max').innerText = `${maxV.toFixed(3)}V (#${l.cells.indexOf(maxV)+1})`;
+                        document.getElementById('cell-min').innerText = `${minV.toFixed(3)}V (#${l.cells.indexOf(minV)+1})`;
+                        document.getElementById('cell-diff').innerText = (maxV - minV).toFixed(3) + 'V';
+                    }
+                }
+                if (data.history) updateChart(data.history);
+            } catch (err) { console.error(err); }
+        }
+
+        async function toggleMos(type) {
+            const chk = document.getElementById(`chk-${type}`);
+            const state = chk.checked;
+            const pin = prompt(`Ingrese PIN para ${state ? 'ACTIVAR' : 'DESACTIVAR'} ${type}:`);
+            if (!pin) { chk.checked = !state; return; }
+            
+            try {
+                const res = await fetch('/api/control', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hostname: document.getElementById('bms-hostname').innerText || 'Gateway', type, state, pin })
+                });
+                const result = await res.json();
+                if (result.status !== 'success') {
+                    alert(result.message);
+                    chk.checked = !state;
+                } else {
+                    alert('Comando en cola (máx 30s)');
+                }
+            } catch (err) { alert('Error de red'); chk.checked = !state; }
+        }
+
+        function updateChart(history) {
+            const labels = history.map(h => new Date(h.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
+            const voltages = history.map(h => h.voltage);
+            const powers = history.map(h => h.power);
+            const currents = history.map(h => h.current);
+
+            if (historyChart) {
+                historyChart.data.labels = labels;
+                historyChart.data.datasets[0].data = voltages;
+                historyChart.data.datasets[1].data = currents;
+                historyChart.data.datasets[2].data = powers;
+                historyChart.update('none');
+            } else {
+                const ctx = document.getElementById('historyChart').getContext('2d');
+                historyChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: 'Voltaje', data: voltages, borderColor: '#ef4444', tension: 0.4, yAxisID: 'yV', pointRadius: 0 },
+                            { label: 'Corriente', data: currents, borderColor: '#3b82f6', tension: 0.4, yAxisID: 'yI', pointRadius: 0 },
+                            { label: 'Potencia', data: powers, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.05)', fill: true, tension: 0.4, yAxisID: 'yP', pointRadius: 0 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            yV: { position: 'left', grid: { color: '#1e293b' }, ticks: { color: '#ef4444' } },
+                            yI: { position: 'right', display: false },
+                            yP: { position: 'right', grid: { display: false }, ticks: { color: '#10b981' } }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+        }
+
+        setInterval(updateDashboard, 5000);
+        updateDashboard();
+    </script>
+</body>
+</html>

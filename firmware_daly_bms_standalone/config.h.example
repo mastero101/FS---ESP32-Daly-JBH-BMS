@@ -1,0 +1,33 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+/**
+ * CONFIGURATION FILE - EXAMPLE
+ * Rename this file to config.h and fill in your details.
+ */
+
+// --- WiFi Configuration ---
+const char* ssid     = "YOUR_WIFI_SSID";
+const char* password = "YOUR_WIFI_PASSWORD";
+
+// --- Daly/JBD BMS Configuration ---
+// MAC Address of your BMS Bluetooth module (Check with nRF Connect)
+const char* bms_mac  = "00:00:00:00:00:00"; 
+
+// BMS Type: 
+//   "DALY" = Classic Daly BMS protocol
+//   "JBD"  = JBD / Jiabaida / XiaoXiang / Daly R24TM Active Balancer protocol
+const char* bms_type = "DALY"; 
+
+// BLE Address Type:
+//   0 = PUBLIC  (older Daly models)
+//   1 = RANDOM  (newer Daly R24TM / JBD models)
+const uint8_t bms_addr_type = 0;
+
+// Hostname for mDNS (Access via http://dalybms.local)
+const char* hostname = "dalybms";
+
+// Time between data requests (milliseconds)
+const unsigned long pollInterval = 10000; 
+
+#endif

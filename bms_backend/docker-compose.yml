@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: bms_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: bms_admin
+      POSTGRES_PASSWORD: bms_secure_pass_2026
+      POSTGRES_DB: bms_database
+    ports:
+      - "5432:5432"
+    volumes:
+      - bms_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  bms_postgres_data:
