@@ -213,10 +213,10 @@
 
     <!-- Top Grid -->
     <div class="grid-row">
-        <div class="card card-connected">
+        <div class="card" id="card-status">
             <div class="card-header"><span>📡 Estado BMS</span></div>
-            <div class="card-value" style="color: var(--accent-green);">CONECTADO</div>
-            <div class="card-footer" id="last-update">Visto: --:--</div>
+            <div class="card-value" id="val-status" style="color: var(--text-secondary);">DESCONECTADO</div>
+            <div class="card-footer" id="last-update">Visto: Nunca</div>
         </div>
         <div class="card">
             <div class="card-header"><span>🔋 SoC Real (BMS)</span></div>
@@ -500,7 +500,25 @@
 
                 if (data.latest) {
                     const l = data.latest;
-                    document.getElementById('last-update').innerText = 'Visto: ' + new Date(l.created_at).toLocaleTimeString();
+                    const lastSeen = new Date(l.created_at);
+                    const now = new Date();
+                    const diffSeconds = (now - lastSeen) / 1000;
+
+                    const statusEl = document.getElementById('val-status');
+                    const cardStatus = document.getElementById('card-status');
+                    const lastUpdateEl = document.getElementById('last-update');
+
+                    if (diffSeconds < 30) { // Connected if seen in last 30s
+                        statusEl.innerText = 'CONECTADO';
+                        statusEl.style.color = 'var(--accent-green)';
+                        cardStatus.classList.add('card-connected');
+                    } else {
+                        statusEl.innerText = 'DESCONECTADO';
+                        statusEl.style.color = 'var(--text-secondary)';
+                        cardStatus.classList.remove('card-connected');
+                    }
+
+                    lastUpdateEl.innerText = 'Visto: ' + lastSeen.toLocaleTimeString();
                     document.getElementById('val-soc').innerText = l.soc.toFixed(1);
                     document.getElementById('val-voltage').innerText = l.voltage.toFixed(2);
                     document.getElementById('val-power').innerText = l.power.toFixed(1);
