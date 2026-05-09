@@ -19,6 +19,40 @@ const pool = new Pool({
   port: process.env.DB_PORT,
 });
 
+// Test & Initialize DB
+const initDB = async () => {
+  try {
+    const res = await pool.query('SELECT NOW()');
+    console.log('✅ Conexión a PostgreSQL exitosa:', res.rows[0].now);
+
+    // Create table if not exists
+    const createTableQuery = `
+      CREATE TABLE IF NOT EXISTS bms_logs (
+        id SERIAL PRIMARY KEY,
+        hostname VARCHAR(50),
+        voltage FLOAT,
+        current FLOAT,
+        power FLOAT,
+        soc FLOAT,
+        temp1 FLOAT,
+        charge_mos BOOLEAN,
+        discharge_mos BOOLEAN,
+        connected BOOLEAN,
+        rssi INTEGER,
+        cells JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_bms_logs_created_at ON bms_logs(created_at);
+    `;
+    await pool.query(createTableQuery);
+    console.log('✅ Base de datos inicializada correctamente');
+  } catch (err) {
+    console.error('❌ Error inicializando PostgreSQL:', err.message);
+  }
+};
+
+initDB();
+
 // Middleware
 app.use(bodyParser.json());
 app.use(express.static('public'));
